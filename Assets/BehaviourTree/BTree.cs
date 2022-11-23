@@ -2,8 +2,7 @@ using UnityEngine;
 
 namespace BehaviourTree
 {
-    [CreateAssetMenu(menuName = "Behaviour Tree", fileName = "New Behaviour Tree", order = 0)]
-    public class BTree : ScriptableObject
+    public class BTree
     {
         public Node RootNode { get; private set; }
 

@@ -4,25 +4,25 @@ namespace BehaviourTree
 {
     public class TreeExecutor : MonoBehaviour
     {
-        public BTree tree;
+        public BehaviourTreeObject tree;
         public bool ExecuteOnAwake = true;
 
         public Status status
         {
-            get => tree.status;
+            get => tree.tree.status;
         }
         
         
-        public void ExecuteTree() => tree.Execute();
+        public void ExecuteTree() => tree.tree.Execute();
 
         void Start()
         {
-            if (ExecuteOnAwake) tree.Execute();
+            if (ExecuteOnAwake) tree.tree.Execute();
         }
 
         void Update()
         {
-            tree.Update();
+            tree.tree.Update();
         }
     }
 }

@@ -2,6 +2,11 @@ namespace BehaviourTree
 {
     public class EntryNode : Node
     {
+        public EntryNode()
+        {
+            Name = "Entry Node";
+        }
+        
         public override Status Start()
         {
             if (Children.Count > 0)

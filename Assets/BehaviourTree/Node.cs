@@ -20,6 +20,7 @@ namespace BehaviourTree {
     [System.Serializable]
     public abstract class Node
     {
+        public string Name { get; protected set; } = "Base Node";
         public Status Status { get; protected set; }
         public Node Parent { get; protected set; }
         public List<Node> Children { get; protected set; } = new List<Node>();
@@ -43,6 +44,10 @@ namespace BehaviourTree {
                     if (Status == Status.RUNNING)
                     {
                         state = State.Active;
+                    }
+                    else
+                    {
+                        Status = End();
                     }
                     break;
                 case State.Active:
