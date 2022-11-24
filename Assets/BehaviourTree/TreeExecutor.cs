@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace BehaviourTree
@@ -14,6 +15,11 @@ namespace BehaviourTree
         
         
         public void ExecuteTree() => tree.tree.Execute();
+
+        private void Awake()
+        {
+            if(!tree.tree.isInitialized) tree.tree.Initialize();
+        }
 
         void Start()
         {

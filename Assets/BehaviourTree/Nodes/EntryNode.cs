@@ -9,7 +9,7 @@ namespace BehaviourTree
         
         public override Status Start()
         {
-            if (Children.Count > 0)
+            if (Children.Length > 0)
             {
                 return Children[0].ExecuteStep();
             }

@@ -1,34 +1,31 @@
 #if UNITY_EDITOR
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using BehaviourTree;
 using UnityEngine;
 using UnityEditor;
 
-[System.Serializable]
+[Serializable]
 public class NodeVisual
 {
     public Rect visualRect = new Rect(0,0,200,50);
     public string visualTitle = "Base Node";
     public GUIStyle visualStyle;
-    public Node wrappedNode; 
-    public Node[] childVisuals;
+    public string wrappedNode; 
+    public string[] childVisuals;
     private bool isDragged = false;
     private BehaviourTreeObject currentHome;
 
     public NodeVisual(BehaviourTreeObject b,Node toWrap,Rect visualRect, string visualTitle, GUIStyle visualStyle)
     {
-        wrappedNode = toWrap;
+        wrappedNode = toWrap.guid;
         currentHome = b;
-        childVisuals = Array.Empty<Node>();
-        toWrap.Children.ForEach(x =>
+        childVisuals = Array.Empty<string>();
+        foreach(Node x in currentHome.tree.nodeLookup[wrappedNode].Children)
         {
-            childVisuals = childVisuals.Append(x).ToArray();
-            b.lookupTable.Add(x, new NodeVisual(b,x,visualRect,x.Name,visualStyle));
-        });
+            childVisuals = childVisuals.Append(x.guid).ToArray();
+            b.vtree.visualLookup.Add(x.guid, new NodeVisual(b,x,visualRect,x.Name,visualStyle));
+        };
         this.visualRect = visualRect;
         this.visualTitle = visualTitle;
         this.visualStyle = visualStyle;
@@ -37,12 +34,12 @@ public class NodeVisual
     public virtual void Draw()
     {
         GUI.Box(visualRect, visualTitle, visualStyle);
-        foreach(Node n in childVisuals)
+        foreach(string nodeGUID in childVisuals)
             Handles.DrawBezier(
                 visualRect.center,
-                currentHome.lookupTable[n].visualRect.center,
+                currentHome.vtree.visualLookup[currentHome.tree.nodeLookup[nodeGUID].guid].visualRect.center,
                 visualRect.center + Vector2.left * 50f,
-                currentHome.lookupTable[n].visualRect.center - Vector2.left * 50f,
+                currentHome.vtree.visualLookup[currentHome.tree.nodeLookup[nodeGUID].guid].visualRect.center - Vector2.left * 50f,
                 Color.white,
                 null,
                 2f
@@ -53,8 +50,8 @@ public class NodeVisual
     
     public virtual bool ProcessEvents(Event e)
     {
-switch (e.type)
-        {
+        switch (e.type)
+                {
             case EventType.MouseDown:
                 if (e.button == 0)
                 {
@@ -90,7 +87,7 @@ switch (e.type)
                 }
                 break;
         }
-        foreach(Node n in childVisuals) currentHome.lookupTable[n].ProcessEvents(e);
+        foreach(string nodeGUID in childVisuals) currentHome.vtree.visualLookup[currentHome.tree.nodeLookup[nodeGUID].guid].ProcessEvents(e);
         return false;
     }
 
@@ -116,11 +113,13 @@ switch (e.type)
     private void OnClickAddNode(Vector2 mousePosition, Type t)
     {
         Node newNode = (Node)Activator.CreateInstance(t);
-        wrappedNode.Append(newNode);
-        childVisuals = childVisuals.Append(newNode).ToArray();
+        newNode.InitNodeCreation(currentHome.tree);
+        currentHome.tree.nodeLookup[wrappedNode].tree = currentHome.tree; //Redundant but required?
+        currentHome.tree.nodeLookup[wrappedNode].Append(newNode);
+        childVisuals = childVisuals.Append(newNode.guid).ToArray();
         Rect newRect = visualRect;
         newRect.position += new Vector2(0, 100);
-        currentHome.lookupTable.Add(newNode, new NodeVisual(currentHome,newNode,newRect,newNode.Name,visualStyle));
+        currentHome.vtree.visualLookup.Add(newNode.guid, new NodeVisual(currentHome,newNode,newRect,newNode.Name,visualStyle));
     }
 }
 #endif

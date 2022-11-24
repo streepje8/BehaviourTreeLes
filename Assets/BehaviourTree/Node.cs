@@ -1,8 +1,12 @@
-using System.Collections.Generic;
+using System;
+using System.Linq;
+using Newtonsoft.Json;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace BehaviourTree {
 
-    [System.Serializable]
+    [Serializable]
     public enum Status
     {
         SUCCESS = 0,
@@ -10,25 +14,62 @@ namespace BehaviourTree {
         RUNNING = 2
     }
     
-    [System.Serializable]
+    [Serializable]
     public enum State
     {
         Inactive = 0,
         Active = 1
     }
 
-    [System.Serializable]
-    public abstract class Node
+    [Serializable]
+    public class Node
     {
         public string Name { get; protected set; } = "Base Node";
+        public string guid = Guid.NewGuid().ToString();
         public Status Status { get; protected set; }
-        public Node Parent { get; protected set; }
-        public List<Node> Children { get; protected set; } = new List<Node>();
+        public string parentGuid= "null";
+        public string[] childrenGuids = Array.Empty<string>();
+        [JsonIgnore]public BTree tree;
+        [JsonIgnore]public Node Parent { get; protected set; }
+        [JsonIgnore]public Node[] Children { get; protected set; } = Array.Empty<Node>();
 
         private bool isInitialized = false;
 
+        public void InitNodeCreation(BTree tree)
+        {
+            if (!(GetType() == typeof(Node))) //No node base class
+            {
+                this.tree = tree;
+                tree.nodeLookup.Add(guid, this);
+            }
+        }
+
+        public void Deserialize(BTree tree)
+        {
+            if (!(GetType() == typeof(Node))) //No node base class
+            {
+                if (!tree.nodeLookup.ContainsKey(guid)) tree.nodeLookup.Add(guid, this);
+            }
+            if(!parentGuid.Equals("null",StringComparison.OrdinalIgnoreCase))
+                Parent = tree.nodeLookup[parentGuid];
+            foreach (string guid in childrenGuids)
+            {
+                Children = Children.Append(tree.nodeLookup[guid]).ToArray();
+            }
+            foreach (var child in Children)
+            {
+                child.Deserialize(tree);
+            }
+            this.tree = tree;
+        }
+
         public virtual void Initialize() { }
-        public abstract Status Start();
+
+        public virtual Status Start()
+        {
+            return Status.SUCCESS;
+        }
+
         public virtual Status Update() => Status.SUCCESS;
 
         public virtual Status End() => Status.SUCCESS;
@@ -65,7 +106,10 @@ namespace BehaviourTree {
         public void Append(Node n)
         {
             n.Parent = this;
-            Children.Add(n);
+            n.parentGuid = guid;
+            Children = Children.Append(n).ToArray();
+            childrenGuids = childrenGuids.Append(n.guid).ToArray();
+            tree.updateCallback?.Invoke();
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -48,7 +49,9 @@ namespace BehaviourTree
                     selectedTree = (BehaviourTreeObject)obj;
                     if (!selectedTree.isInitialized)
                     {
-                        selectedTree.rootNode = new NodeVisual(selectedTree, selectedTree.tree.RootNode,
+                        selectedTree.DeSerialize();
+                        if(!selectedTree.tree.isInitialized) selectedTree.tree.Initialize();
+                        selectedTree.vtree.rootNode = new NodeVisual(selectedTree, selectedTree.tree.RootNode,
                             new Rect(0, 0, 200, 50),
                             selectedTree.tree.RootNode.Name, nodeStyle);
                         selectedTree.isInitialized = true;
@@ -63,25 +66,32 @@ namespace BehaviourTree
         {
             if (!selectedTree.isInitialized)
             {
-                selectedTree.rootNode = new NodeVisual(selectedTree, selectedTree.tree.RootNode,
+                selectedTree.DeSerialize();
+                if(!selectedTree.tree.isInitialized) selectedTree.tree.Initialize();
+                selectedTree.vtree.rootNode = new NodeVisual(selectedTree, selectedTree.tree.RootNode,
                     new Rect(0, 0, 200, 50),
                     selectedTree.tree.RootNode.Name, nodeStyle);
                 selectedTree.isInitialized = true;
                 EditorUtility.SetDirty(selectedTree);
             }
 
-            DrawNode(selectedTree.rootNode);
+            if (selectedTree.vtree.rootNode == null)
+            {
+                selectedTree.DeSerialize();
+            }
+            DrawNode(selectedTree.vtree.rootNode);
         }
 
         public void DrawNode(NodeVisual n)
-        {
+        {//
             n.Draw();
-            foreach(Node j in n.childVisuals) DrawNode(selectedTree.lookupTable[j]);
+            foreach (string nodeGUID in n.childVisuals)
+                DrawNode(selectedTree.vtree.visualLookup[selectedTree.tree.nodeLookup[nodeGUID].guid]);
         }
 
         private void ProcessEvents(Event e)
         {
-            selectedTree.rootNode.ProcessEvents(e);
+            selectedTree.vtree.rootNode.ProcessEvents(e);
         } 
 
     }
